@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sopa de letras: Ética en la IA</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f6fb;--sf:#fff;--tx:#14213d;--mu:#5b6478;--ac:#4f46e5;--ac2:#e0e7ff;--ok:#15803d;--bad:#b91c1c;--bd:#d5daea;--sel:#fde68a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1420;--sf:#1a2133;--tx:#e8ecf8;--mu:#9aa5c0;--ac:#818cf8;--ac2:#2a3158;--ok:#4ade80;--bad:#f87171;--bd:#2d3752;--sel:#a16207}}
+:root[data-theme="dark"]{--bg:#0f1420;--sf:#1a2133;--tx:#e8ecf8;--mu:#9aa5c0;--ac:#818cf8;--ac2:#2a3158;--ok:#4ade80;--bad:#f87171;--bd:#2d3752;--sel:#a16207}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:980px;margin:0 auto;padding:14px;display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){main{grid-template-columns:minmax(0,540px) minmax(0,1fr);align-items:start}header{grid-column:1/-1}}
+h1{margin:0;font-size:clamp(1.3rem,4.5vw,1.9rem)}
+header p{margin:4px 0 0;color:var(--mu)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+#time{font-variant-numeric:tabular-nums;font-size:1.7rem;font-weight:800}
+#time.low{color:var(--bad)}
+.bar{height:8px;background:var(--ac2);border-radius:6px;overflow:hidden;margin-bottom:10px}
+.bar i{display:block;height:100%;width:100%;background:var(--ac);transition:width .25s linear}
+.wrap{position:relative}
+#grid{display:grid;grid-template-columns:repeat(13,1fr);gap:2px;touch-action:none;user-select:none;-webkit-user-select:none;width:100%}
+#grid.lock{filter:blur(6px);pointer-events:none}
+.c{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--ac2);border-radius:6px;font-weight:700;font-size:min(4.2vw,21px);cursor:pointer}
+.c.s{background:var(--sel);color:#111}
+.c.f{color:#111}
+.c.r{outline:2px dashed var(--bad)}
+.cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:12px}
+.cover[hidden]{display:none}
+button{font:inherit;font-weight:700;background:var(--ac);color:#fff;border:0;border-radius:12px;padding:10px 18px;cursor:pointer}
+button.alt{background:var(--ac2);color:var(--tx)}
+button:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+li{padding:8px 10px;border:1px solid var(--bd);border-radius:10px;font-weight:700;letter-spacing:.04em}
+li.on{background:var(--ok);color:#fff;border-color:var(--ok);text-decoration:line-through}
+#msg{min-height:3.4em;margin:10px 0 0;padding:8px 10px;border-radius:10px;background:var(--ac2);font-size:.92rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stat{color:var(--mu);font-size:.9rem}
+</style></head>
+<body>
+<main>
+<header><h1>🔎 Sopa de letras: Ética en la Inteligencia Artificial</h1>
+<p>Encuentra las 10 palabras antes de que termine el tiempo. Arrastra el dedo o el ratón en línea recta; pueden estar en horizontal, vertical, diagonal y al revés.</p></header>
+
+<section class="card" aria-label="Tablero">
+<div class="top"><div id="time" role="timer" aria-live="off">05:00</div><div class="stat" id="cnt">0 / 10 encontradas</div></div>
+<div class="bar"><i id="bar"></i></div>
+<div class="wrap"><div id="grid" class="lock" aria-label="Cuadrícula de letras"></div>
+<div class="cover" id="cover"><b style="font-size:1.2rem">¿Listo para el reto?</b><span>Nivel intermedio · 5 minutos</span><button id="go">▶ Iniciar</button></div></div>
+</section>
+
+<section class="card" aria-label="Palabras">
+<b>Palabras a encontrar</b>
+<ul id="list" style="margin-top:8px"></ul>
+<p id="msg" aria-live="polite">Cuando encuentres una palabra verás su significado aquí.</p>
+<div class="row"><button class="alt" id="hint">💡 Pista</button><button class="alt" id="again">↻ Reiniciar</button></div>
+</section>
+</main>
+<script>
+const W=[
+['SESGO','Prejuicio sistemático en los datos o el modelo que produce resultados injustos.'],
+['PRIVACIDAD','Derecho a decidir qué datos personales se recopilan y cómo se usan.'],
+['TRANSPARENCIA','Poder entender cómo y por qué un sistema de IA toma una decisión.'],
+['EQUIDAD','Trato justo que no discrimina a personas ni a grupos.'],
+['ALGORITMO','Conjunto de pasos con los que la IA procesa datos y decide.'],
+['AUTONOMIA','Capacidad de las personas de decidir sin ser manipuladas por la IA.'],
+['JUSTICIA','Repartir de forma justa los beneficios y riesgos de la tecnología.'],
+['SEGURIDAD','Proteger a las personas y a los sistemas frente a daños y usos indebidos.'],
+['DATOS','Información con la que se entrena la IA; debe obtenerse con consentimiento.'],
+['CONFIANZA','Credibilidad que se gana con una IA fiable, explicable y responsable.']];
+const N=13,T=300,DIRS=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];
+const $=s=>document.querySelector(s),G=$('#grid');
+let g,pos,found,end,tm,run,a,b,cells=[];
+const rnd=n=>Math.floor(Math.random()*n);
+function build(){
+ for(let t=0;t<50;t++){
+  g=Array.from({length:N},()=>Array(N).fill(''));pos={};let ok=true;
+  for(const [w] of [...W].sort((x,y)=>y[0].length-x[0].length)){
+   let placed=false;
+   for(let k=0;k<300&&!placed;k++){
+    const [dr,dc]=DIRS[rnd(8)],r=rnd(N),c=rnd(N),r2=r+dr*(w.length-1),c2=c+dc*(w.length-1);
+    if(r2<0||r2>=N||c2<0||c2>=N)continue;
+    let fit=true;for(let i=0;i<w.length;i++){const v=g[r+dr*i][c+dc*i];if(v&&v!==w[i]){fit=false;break}}
+    if(!fit)continue;
+    pos[w]=[];for(let i=0;i<w.length;i++){g[r+dr*i][c+dc*i]=w[i];pos[w].push([r+dr*i,c+dc*i])}
+    placed=true}
+   if(!placed){ok=false;break}}
+  if(ok)break}
+ const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!g[r][c])g[r][c]=L[rnd(26)];
+ G.innerHTML='';cells=[];
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){const d=document.createElement('div');d.className='c';d.textContent=g[r][c];d.dataset.r=r;d.dataset.c=c;G.appendChild(d);cells.push(d)}
+ $('#list').innerHTML=W.map(([w])=>`<li data-w="${w}">${w}</li>`).join('');
+}
+const cell=(r,c)=>cells[r*N+c];
+function line(p,q){
+ const dr=q[0]-p[0],dc=q[1]-p[1],n=Math.max(Math.abs(dr),Math.abs(dc));
+ if(dr&&dc&&Math.abs(dr)!==Math.abs(dc))return null;
+ const sr=Math.sign(dr),sc=Math.sign(dc),o=[];
+ for(let i=0;i<=n;i++)o.push([p[0]+sr*i,p[1]+sc*i]);return o}
+function mark(cur){cells.forEach(x=>x.classList.remove('s'));if(cur)cur.forEach(([r,c])=>cell(r,c).classList.add('s'))}
+function at(e){const el=document.elementFromPoint(e.clientX,e.clientY);return el&&el.classList.contains('c')?[+el.dataset.r,+el.dataset.c]:null}
+let cur=null;
+G.addEventListener('pointerdown',e=>{if(!run)return;a=at(e);if(!a)return;G.setPointerCapture(e.pointerId);cur=[a];mark(cur)});
+G.addEventListener('pointermove',e=>{if(!a)return;const p=at(e);if(!p)return;const l=line(a,p);if(l){cur=l;mark(cur)}});
+G.addEventListener('pointerup',()=>{if(!a)return;check(cur);a=null;cur=null;mark(null)});
+G.addEventListener('pointercancel',()=>{a=null;mark(null)});
+function check(l){
+ if(!l||l.length<2)return;
+ const s=l.map(([r,c])=>g[r][c]).join(''),rv=[...s].reverse().join('');
+ const w=W.map(x=>x[0]).find(x=>!found.has(x)&&(x===s||x===rv));
+ if(!w){msg('Esa no es una palabra de la lista. ¡Sigue buscando!');return}
+ reveal(w,found.size);found.add(w);
+ msg(`✅ ${w}: ${W.find(x=>x[0]===w)[1]}`);upd();
+ if(found.size===10)finish(true)}
+function reveal(w,i,miss){
+ const h=(i*37+10)%360;
+ pos[w].forEach(([r,c])=>{const x=cell(r,c);x.classList.add('f');if(miss)x.classList.add('r');else x.style.background=`hsl(${h} 75% 72%)`});
+ if(!miss)document.querySelector(`li[data-w="${w}"]`).classList.add('on')}
+function msg(t){$('#msg').textContent=t}
+function upd(){$('#cnt').textContent=`${found.size} / 10 encontradas`}
+function fmt(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function tick(){
+ const left=(end-Date.now())/1000;
+ $('#time').textContent=fmt(left);$('#time').classList.toggle('low',left<=60);
+ $('#bar').style.width=Math.max(0,left/T*100)+'%';
+ if(left<=0)finish(false)}
+function finish(win){
+ run=false;clearInterval(tm);G.classList.add('lock');
+ const used=Math.round(T-Math.max(0,(end-Date.now())/1000));
+ if(win){G.classList.remove('lock');msg(`🏆 ¡Excelente! Encontraste las 10 palabras en ${fmt(used)}. Reflexiona: una IA ética combina todos estos principios.`)}
+ else{G.classList.remove('lock');W.forEach(([w],i)=>{if(!found.has(w))reveal(w,i,true)});msg(`⏰ Se acabó el tiempo. Encontraste ${found.size} de 10. Las que faltaron están marcadas con borde rojo.`)}}
+function reset(){
+ clearInterval(tm);run=false;found=new Set();build();G.classList.add('lock');$('#cover').hidden=false;
+ $('#time').textContent='05:00';$('#time').classList.remove('low');$('#bar').style.width='100%';upd();
+ msg('Cuando encuentres una palabra verás su significado aquí.')}
+$('#go').onclick=()=>{$('#cover').hidden=true;G.classList.remove('lock');run=true;end=Date.now()+T*1000;tm=setInterval(tick,250);tick()};
+$('#again').onclick=reset;
+$('#hint').onclick=()=>{if(!run)return;const w=W.map(x=>x[0]).find(x=>!found.has(x));if(!w)return;const [r,c]=pos[w][0];const x=cell(r,c);x.classList.add('s');setTimeout(()=>x.classList.remove('s'),1500);msg(`💡 Pista: busca ${w[0]}… (${w.length} letras). La primera letra parpadeó en amarillo.`)};
+reset();
+</script></body></html>
